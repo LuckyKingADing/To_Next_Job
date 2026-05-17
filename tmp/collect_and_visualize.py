@@ -91,6 +91,13 @@ CLIP_FILES = [
     "gnss_error_only_no_std.png",
 ]
 
+# 需要从子数据集vis目录收集到All_Results根目录的关键PNG文件
+KEY_VIS_PNGS = [
+    "CEP95_Horizontal.png",
+    "Max_Horizontal.png",
+    "RMS_Horizontal.png",
+]
+
 
 def find_all_subdatasets(output_dir: Path):
     """扫描输出目录，找到所有子数据集文件夹"""
@@ -470,6 +477,51 @@ def visualize_single_file(precision_file: Path, vis_dir: Path, prefix: str,
     return count
 
 
+def collect_key_vis_pngs(vis_dir: Path, all_results_dir: Path):
+    """
+    将所有子数据集vis目录下的关键PNG文件复制到All_Results根目录
+    文件命名格式: {prefix}_{原文件名}.png
+    例如: pvt_nocamera_2026-05-07_13-14-52_CEP95_Horizontal.png
+
+    Args:
+        vis_dir: 可视化目录路径 (All_Results/vis/)
+        all_results_dir: All_Results根目录路径
+    """
+    if not vis_dir.exists() or not vis_dir.is_dir():
+        return
+
+    print("\n" + "=" * 60)
+    print("收集关键可视化PNG文件到All_Results根目录")
+    print("=" * 60)
+
+    copied_count = 0
+
+    # 遍历所有子数据集的vis目录（如 vis/pvt_nocamera_xxx/）
+    for sub_dir in vis_dir.iterdir():
+        if not sub_dir.is_dir():
+            continue
+
+        prefix = sub_dir.name  # 例如: pvt_nocamera_2026-05-07_13-14-52
+
+        # 查找每个关键PNG文件
+        for key_png in KEY_VIS_PNGS:
+            # 子数据集中的文件名已经带有前缀，例如: {prefix}_CEP95_Horizontal.png
+            src_file = sub_dir / f"{prefix}_{key_png}"
+
+            if src_file.exists():
+                # 目标文件名保持原样（已包含前缀），输出到All_Results根目录
+                dst_file = all_results_dir / f"{prefix}_{key_png}"
+
+                shutil.copy2(src_file, dst_file)
+                print(f"  ✓ 复制: {sub_dir.name}/{src_file.name} -> All_Results/{dst_file.name}")
+                copied_count += 1
+            else:
+                print(f"  缺失: {sub_dir.name}/{prefix}_{key_png}")
+
+    print(f"\n✓ 共复制 {copied_count} 个关键PNG文件到 All_Results 根目录")
+    print("=" * 60)
+
+
 def visualize_all_precision_files(all_results_dir: Path, version_label: str,
                                    schemes_filter: list = None, scenes_filter: list = None,
                                    visualize_types: list = None, dry_run: bool = False):
@@ -545,6 +597,9 @@ def visualize_all_precision_files(all_results_dir: Path, version_label: str,
             print(f"  {sub_dir.name}/ ({files_count} 个文件)")
 
     print("=" * 60)
+
+    # 收集关键PNG文件到All_Results根目录
+    collect_key_vis_pngs(vis_dir, all_results_dir)
 
 
 def main():
