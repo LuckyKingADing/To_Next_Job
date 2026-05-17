@@ -1,0 +1,412 @@
+# 配置文件使用习惯单位（均已标注）
+# 程序内部使用国际标准单位，配置文件在解析的时候会进行相应转换
+
+# 需要注意键值的类型，比如浮点型需要明确带小数点
+
+# 所有欧拉角都是按照EIGEN的习惯，表示自身的旋转，而非坐标系的变换
+
+# 惯导及融合定位内部均使用右-前-上和东-北-天坐标系
+
+
+####################### MSF Settings ##########################
+[basic_info]
+vehicle_info = "MR25" # 默认是MR25车型
+
+[initialization]
+init_P = [
+    4.0,  # degree   | pitch
+    4.0,  # degree   | roll
+    4.0,  # degree   | yaw
+    2.0,  # m/s      | east velocity
+    2.0,  # m/s      | north velocity
+    3.0,  # m/s      | up velocity
+    2.0,  # m        | latitude
+    2.0,  # m        | longitude
+    4.0,  # m        | height
+    0.01, # degree/s | x gyro bias
+    0.01, # degree/s | y gyro bias
+    0.01, # degree/s | z gyro bias
+    0.03, # m/s^2    | x acc bias
+    0.03, # m/s^2    | y acc bias
+    0.03, # m/s^2    | z acc bias
+    0.8,  # degree   | pitch misalignment error
+    0.02, # scale    | wheel speed error
+    0.8,  # degree   | yaw misalignment error
+    0.5,  # m        | position bias such as mapping errors, latitude
+    0.5,  # m        | position bias such as mapping errors, longitude
+    0.5,  # degree   | map yaw error
+]
+
+[imu]
+gyro_RW = 9.0e-6           # rad/sec Rate Random Walk 
+gyro_ND = 3.3e-3           # rad/sec Noise Density
+acc_RW = 4.0e-4            # m/sec^2 Rate Random Walk
+acc_ND = 1.2e-2            # m/sec^2 Noise Density
+imu_data_refresh_dt = 0.01 # sec，设计更新周期，实际更新周期可能有波动
+
+[lever] ## R-F-U, meters
+# 由两个向量即可表示三个杆臂值
+vehicle2gnss = [-0.24186, -0.85628, 1.79508]
+imu2vehicle = [-0.08238, 0.73733, -0.47627]
+# 第三个杆臂直接使用计算的方式得到，不会从配置文件里面读取
+# imu2gnss = imu2vehicle + vehicle2gnss
+imu2gnss = [-0.32424, -0.11895, 1.31881]
+
+[misalignment] # degree | pitch - roll - yaw | 内旋 
+euler_angle_imu2vehicle = [0.0, 0.0, 0.0] # matrix = Yaw * Roll * Pitch 
+
+[wheel]
+wheel_msg_skip = 10          # 轮速信息降频，N帧取1帧
+wheel_speed_bias = 0.0       # wheel_speed * (1 + wheel_speed_bias) = reference_speed
+wheel_speed_bias_std = 0.01  # 
+wheel_data_refresh_dt = 0.01 # sec，设计更新周期，实际更新周期可能有波动
+wheel_pitch_rw = 3.0e-2      # 度
+wheel_yaw_rw = 5.0e-2        # 度
+wheel_spd_scale_rw = 1.0e-4
+
+# 车轮的等效半径在不同的车速下是不同的
+# 这里做个简单的分段线性模型
+
+wheel_scale_adapter_00mps = 0.0e-3
+wheel_scale_adapter_10mps = 0.3e-3
+wheel_scale_adapter_20mps = 1.0e-3
+wheel_scale_adapter_30mps = 3.2e-3
+wheel_scale_adapter_40mps = 5.0e-3
+
+slip_index_rejection_bound = 0.3 # ω_z*v_y 侧滑指数大于这个值将被过滤掉
+slow_speed_bound = 5.0           # m/s 小于这个值，不进行低可观状态的估计
+
+[gnss]
+gnss_override_raw_std = false # 是否替代GNSS消息中的标准差
+gnss_position_bias_std = [ # m 
+    0.12,   # Fix 
+    0.6,    # Float
+    3.0,    # PPP
+    10.0,   # DGPS
+    20.0,   # SINGLE
+    1.0e10, # NONE
+    1.0e10, # INVALID
+]
+gnss_velocity_bias_std = [ # m/s 
+    0.7,    # Fix 
+    1.3,    # Float
+    3.0,    # PPP
+    5.0,    # DGPS
+    10.0,   # SINGLE
+    1.0e10, # NONE
+    1.0e10, # INVALID
+]
+gnss_data_refresh_dt = 0.1 # sec，设计更新周期，实际更新周期可能有波动
+
+# 位置补偿策略，限制对于GNSS新息稳定的场景下使用
+enable_ego_position_compensation = true # 启用自车纵向位置补偿策略
+
+ego_pos_inno_lat_diff_bound = 0.3 # m，横向新息，相较于均值的差，需小于该值
+ego_pos_inno_lat_std_bound = 0.2  # m，横向新息标准差，需小于该值
+ego_pos_inno_lon_bound = 0.4      # m，纵向新息，需大于该值
+ego_pos_inno_lon_mean_bound = 0.4 # m，纵向新息均值，需大于该值
+ego_pos_inno_lon_std_bound = 2.0  # m，纵向新息标准差，需小于该值
+ego_pos_inno_hgt_bound = 0.6      # m，天向新息，需大于该值
+ego_pos_inno_hgt_mean_bound = 0.6 # m，天向新息均值，需大于该值
+ego_pos_inno_hgt_std_bound = 2.0  # m，天向新息标准差，需小于该值
+
+[vision_fusion]
+map_bias_front_damper = 1.0
+vision_pos_lat_bias_std = 0.3 # 米，横向位置偏差标准差
+vision_pos_lon_bias_std = 0.3 # 米，纵向位置偏差标准差
+vision_heading_bias_std = 3.0 # 度，航向偏差标准差
+vision_data_refresh_dt = 0.1  # sec，设计更新周期，实际更新周期可能有波动
+map_pos_east_bias_rw = 0.3    # 米，地图横向位置偏差随机游走
+map_pos_north_bias_rw = 0.3   # 米，地图纵向位置偏差随机游走
+map_heading_bias_rw = 0.2     # 度，地图航向偏差随机游走
+
+[smooth]
+# 平滑性策略
+# 是否启用横向平滑
+enable_position_smooth_lat = false
+# 米，横向修正量边界，边界内的执行平滑策略。超过边界的，一般可认为系统本身误差很大了，没必要进行平滑
+position_smooth_lat_update_bound = 3.0
+# 米，横向最大量测更新修正量
+position_max_delta_lat_feedback = 0.03
+
+[persistence]
+# 使能的情况下，会对指定路径进行操作
+# 谨慎设置，不会对文件进行判断，如果路径设置到系统中其他文件，会覆盖文件内容
+# 建议使能，加速收敛。在安装角偏差较大的场景下非常有用
+is_persistence_enable = true
+# 会自动创建目录和文件
+vehicle_info_file_path = "/appdata/TCMSF_Dynamic_Calibration/vehicle_info.toml"
+
+[time_compesation] ## 默认启用时间补偿，该设置暂时不控制是否使能
+# 因为IMU的更新速度最快，实时性最好，所以我们认为最新的IMU数据的时间为当前时间
+# 时间补偿，主要涉及到GNSS、IMU、视觉、轮速几个传感器之间的时间对齐
+enable_gnss_time_compesation = true
+enable_wheel_time_compesation = true
+enable_vision_time_compesation = true
+
+[constrain]
+# 限制各个状态量的范围
+# degree | pitch - roll - yaw | 内旋 
+euler_angle_imu2navi = [75.0, 75.0, 180.0]
+
+# m/s E-N-U
+velocity_navi2earth = [100.0, 100.0, 30.0]
+
+# degree/s R-F-U
+gyro_bias = [0.2, 0.2, 0.2]
+
+# m/s^2 R-F-U
+acc_bias = [0.1, 0.1, 0.1]
+
+# scale 
+wheel_speed_bias = 0.02
+
+# misalignment imu2vehicle
+euler_angle_imu2vehicle = [ # degree | pitch - roll - yaw | 内旋 
+    2.5, # pitch
+    0.0, # roll
+    2.5, # yaw
+]
+
+# map_bias
+map_bias_lat = 1.6     # m
+map_bias_lon = 1.6     # m 
+map_bias_heading = 0.3 # degree 
+
+# the error state covariance
+P_std_min = [
+    0.001,    # degree   | pitch
+    0.001,    # degree   | roll
+    0.001,    # degree   | yaw
+    0.0001,   # m/s      | east velocity
+    0.0001,   # m/s      | north velocity
+    0.01,     # m/s      | up velocity
+    0.00001,  # m        | latitude
+    0.00001,  # m        | longitude
+    0.01,     # m        | height
+    0.00001,  # degree/s | x gyro bias
+    0.00001,  # degree/s | y gyro bias
+    0.00001,  # degree/s | z gyro bias
+    0.00001,  # m/s^2    | x acc bias
+    0.00001,  # m/s^2    | y acc bias
+    0.00001,  # m/s^2    | z acc bias
+    0.00001,  # degree   | pitch misalignment error
+    0.000001, # scale    | wheel speed error
+    0.00001,  # degree   | yaw misalignment error
+    0.001,    # m        | position bias such as mapping errors, latitude
+    0.001,    # m        | position bias such as mapping errors, longitude
+    0.01,     # degree   | map yaw error
+]
+
+P_std_max = [
+    90.0,   # degree   | pitch
+    90.0,   # degree   | roll
+    90.0,   # degree   | yaw
+    100.0,  # m/s      | east velocity
+    100.0,  # m/s      | north velocity
+    100.0,  # m/s      | up velocity
+    1000.0, # m        | latitude
+    1000.0, # m        | longitude
+    1000.0, # m        | height
+    10.0,   # degree/s | x gyro bias
+    10.0,   # degree/s | y gyro bias
+    10.0,   # degree/s | z gyro bias
+    10.0,   # m/s^2    | x acc bias
+    10.0,   # m/s^2    | y acc bias
+    10.0,   # m/s^2    | z acc bias
+    100.0,  # degree   | pitch misalignment error
+    0.5,    # scale    | wheel speed error
+    100.0,  # degree   | yaw misalignment error
+    10.0,   # m        | position bias such as mapping errors, latitude
+    10.0,   # m        | position bias such as mapping errors, longitude
+    20.0,   # degree   | map yaw error
+]
+
+ego_lat_velocity_constrain = 5.0 # m/s 限制自车横向速度
+# 考虑到角度偏差，这个值不宜设置的过小
+
+[measurement] # 依据新息进行协方差自适应
+wheel_velocity_additional_std_scale = 1.0
+gnss_position_additional_std_scale = [
+    0.8,    # Fix 
+    3.0,    # Float
+    10.0,   # PPP
+    30.0,   # DGPS
+    100.0,  # SINGLE
+    1000.0, # NONE
+    1.0e10, # INVALID
+]
+gnss_velocity_additional_std_scale = [
+    2.2,    # Fix 
+    4.0,    # Float
+    10.0,   # PPP
+    10.0,   # DGPS
+    100.0,  # SINGLE
+    1000.0, # NONE
+    1.0e10, # INVALID
+]
+gnss_heading_additional_std_scale = [
+    1.2,    # Fix 
+    3.0,    # Float
+    7.0,    # PPP
+    10.0,   # DGPS
+    100.0,  # SINGLE 
+    1000.0, # NONE 
+    1.0e10, # INVALID
+]
+vision_pos_lat_additional_std_scale = 0.1
+vision_pos_lon_additional_std_scale = 0.1
+vision_heading_additional_std_scale = 2.0
+
+# 考虑到车辆的壳体与四轮并非刚性连接，悬架的变化使得IMU与车速方向并非完全固联
+# 仅在车辆处于稳态的时候，才进行安装角误差的估计
+maneuver_status_steady_acc_bound = 0.45        # m/s^2 平面加速度，稳态阈值
+maneuver_status_low_dynamic_acc_bound = 0.9    # m/s^2 平面加速度，低动态阈值
+maneuver_status_steady_rotate_bound = 0.70     # 度/秒 稳态阈值
+maneuver_status_low_dynamic_rotate_bound = 1.5 # 度/秒 低动态阈值
+
+
+[IGG3] # IGG3 抗差 Typical values k0=1.0~1.5，k1=2.0~3.0
+gnss_pos_igg3_k0 = 1.0
+gnss_pos_igg3_k1 = 5.0
+gnss_vel_igg3_k0 = 1.0
+gnss_vel_igg3_k1 = 5.0
+gnss_hdg_igg3_k0 = 1.0
+gnss_hdg_igg3_k1 = 3.0
+wheel_spd_igg3_k0 = 1.0
+wheel_spd_igg3_k1 = 3.0
+zupt_igg3_k0 = 1.0
+zupt_igg3_k1 = 2.0
+vision_pos_lat_igg3_k0 = 1.0
+vision_pos_lat_igg3_k1 = 25.0
+vision_pos_lon_igg3_k0 = 1.0
+vision_pos_lon_igg3_k1 = 20.0
+vision_hdg_igg3_k0 = 1.0
+vision_hdg_igg3_k1 = 25.0
+
+
+[stablization]
+attitude_stablization_by_gravity = false # 全局姿态稳定，建议false
+
+
+[dead_reckoning]
+use_internal_dr_info = true # 使用内部DR效果更好，设置为true
+
+
+[fusion]
+enable_gnss_fusion = true
+enable_gnss_pos_fusion = true
+enable_gnss_vel_fusion = true
+enable_gnss_heading_fusion = true
+enable_wheel_vel_fusion = true
+enable_vision_fusion = false      # E2E 设计上不使用LD地图，这里关闭使用LD地图匹配的结果，保持与量产状态一致
+enable_vision_lat_fusion = true   # 融合横向误差
+enable_vision_lon_fusion = false  # 融合纵向误差
+enable_vision_hdg_fusion = true   # 融合航向误差
+enable_map_fusion = true          # 融合地图信息
+enable_db_fusion = true           # 融合DB（DriveBoundary）信息
+
+[align]
+# m/s, The minimum speed required to ensure GNSS heading validity.
+gnss_minimum_speed_required_for_initialization = 5.0
+
+# 小于这个值就认为可以从FINE_ALIGN状态脱离，进入ALIGNED状态
+gnss_maximum_position_innovation_for_fine_align = 0.1     # m
+gnss_maximum_speed_innovation_for_fine_align = 0.3        # m/s
+gnss_maximum_heading_innovation_for_fine_align = 0.6      # degree
+gnss_maximum_position_innovation_for_fine_align_std = 0.2 # m
+gnss_maximum_speed_innovation_for_fine_align_std = 0.4    # m/s
+gnss_maximum_heading_innovation_for_fine_align_std = 0.6  # degree
+
+# 小于这个值就认为可以从COARSE_ALIGN状态脱离，进入FINE_ALIGN状态
+gnss_maximum_position_innovation_for_coarse_align = 0.3     # m
+gnss_maximum_speed_innovation_for_coarse_align = 0.5        # m/s
+gnss_maximum_heading_innovation_for_coarse_align = 1.0      # degree
+gnss_maximum_position_innovation_for_coarse_align_std = 0.4 # m
+gnss_maximum_speed_innovation_for_coarse_align_std = 0.8    # m/s
+gnss_maximum_heading_innovation_for_coarse_align_std = 1.2  # degree
+
+# 大于这个值就认为滤波器需要脱离ALIGNED状态，进入FINE_ALIGN状态
+gnss_minimum_position_innovation_for_exit_aligned = 0.4     # m
+gnss_minimum_speed_innovation_for_exit_aligned = 0.8        # m/s
+gnss_minimum_heading_innovation_for_exit_aligned = 0.8      # degree
+gnss_minimum_position_innovation_for_exit_aligned_std = 0.4 # m
+gnss_minimum_speed_innovation_for_exit_aligned_std = 0.8    # m/s
+gnss_minimum_heading_innovation_for_exit_aligned_std = 0.8  # degree
+
+# 大于这个值就认为滤波器需要脱离FINE_ALIGN状态，进入COARSE_ALIGN状态
+gnss_minimum_position_innovation_for_exit_fine_align = 1.6     # m
+gnss_minimum_speed_innovation_for_exit_fine_align = 2.0        # m/s
+gnss_minimum_heading_innovation_for_exit_fine_align = 1.4      # degree
+gnss_minimum_position_innovation_for_exit_fine_align_std = 1.6 # m
+gnss_minimum_speed_innovation_for_exit_fine_align_std = 2.0    # m/s
+gnss_minimum_heading_innovation_for_exit_fine_align_std = 1.4  # degree
+
+# 大于这个值就认为滤波器需要重置，进入INITIALIZATION状态
+gnss_minimum_position_innovation_for_initialization = 3.0     # m
+gnss_minimum_speed_innovation_for_initialization = 2.4        # m/s
+gnss_minimum_heading_innovation_for_initialization = 3.4      # degree
+gnss_minimum_position_innovation_for_initialization_std = 2.2 # m
+gnss_minimum_speed_innovation_for_initialization_std = 2.4    # m/s
+gnss_minimum_heading_innovation_for_initialization_std = 3.4  # degree
+
+[diagnosis]
+## 将传感器量测时间与IMU量测时间的差值作为传感器的延迟
+sensor_delay_diagnosis_enable = true #
+# 延迟超过valid bound，则认为是异常值，剔除
+sensor_delay_valid_bound = 1.0 # second
+# 延迟在延迟均值附近filter_bound范围外，认为是异常值，剔除
+sensor_delay_filter_bound_gnss = 0.2    # second
+sensor_delay_filter_bound_vehicle = 0.2 # second
+sensor_delay_filter_bound_vision = 0.2  # second
+
+[output]
+# 0 -> gnss_antenna 
+# 1 -> vehicle 
+output_position_center = 1
+# 0 -> ENU_frame
+# 1 -> map_frame
+output_reference_frame = 1
+
+####################### GNSS RTCM Settings ##########################
+[RTCM]
+dump_to_console = true
+
+###################### 车型配置参数覆盖 #########################
+## 主要包括杆臂值和车型信息更新
+[vehicle_info_override]
+vehicle_info_override_enable = true
+vehicle_info_override_file_path = "modules/localization/conf/vehicle_hc25acu.toml"
+
+############################
+
+[motion_status]
+buffer_size = 300
+max_steer_angle_for_turning = 5.0
+min_steer_angle_for_straight = 2.0
+max_gyro_z_for_turning = 1.5
+min_gyro_z_for_straight = 0.5
+min_speed_for_static = 1.0
+min_acc_x_uniform = 0.02
+percent_for_valid = 0.85
+observation_window = 100
+
+
+[fusion_mode]
+# 自适应调整卫星融合模式
+gnss_fusion_mode_adaption = true
+# 卫星融合模式
+# 0 -> GNSS_LOOSE_COUPLE 
+# 1 -> GNSS_TIGHT_COUPLE 
+# 2 -> RTK_LOOSE_COUPLE  
+# 3 -> RTK_TIGHT_COUPLE  
+gnss_fusion_mode = 0
+
+[sd_map]
+# 是否启用sdmap偏置补偿
+enable_sd_map_bias_comp = true
+
+max_bias_propor_dist = 0.04    # 最大修正量距离比例
+map_bias_bound = 4.0           # 地图偏置量估计值上限
+min_thres_trig_corr = 5.0      # 触发偏置量更新的最小输入
+bias_fading_propor_dist = 0.01 # 渐消量距离比例

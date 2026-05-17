@@ -1,0 +1,7 @@
+/test/tcmsf_log/*
+/dump/database/*
+/test/msf_test/data
+/third_party/OB_GINS
+/third_party/duckdb*
+/database
+/plugins

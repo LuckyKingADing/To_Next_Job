@@ -1,0 +1,10 @@
+module_config {
+    module_library : "modules/localization/libTCMSF_component.so"
+    components {
+        class_name : "TCMSFComponent"
+        config {
+            name : "TCMSF"
+            config_file_path : "/appdata/vehicle_configs/sensors/imu_config.json"
+        }
+    }
+}

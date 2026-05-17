@@ -1,0 +1,9 @@
+module_config {
+    module_library : "modules/localization/libDR_component.so"
+    components {
+        class_name : "DRComponent"
+        config {
+            name : "dead_reckoning"
+        }
+    }
+}

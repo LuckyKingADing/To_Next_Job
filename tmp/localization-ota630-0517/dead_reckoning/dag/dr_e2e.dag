@@ -1,0 +1,9 @@
+module_config {
+    module_library : "/apollo/bazel-bin/modules/localization/src/dead_reckoning/libDR_component.so"
+    components {
+        class_name : "DRComponent"
+        config {
+            name : "dead_reckoning"
+        }
+    }
+}

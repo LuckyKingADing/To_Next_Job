@@ -1,0 +1,4 @@
+enable_dr_daemon: true # default false
+enable_msf_info: true # false ins, true msf (prefer)
+rt_priority: 2 # dr_daemon thread rt priority
+rt_priority_delay_s: 90 # set dr_daemon thread rt priority [] seconds after init

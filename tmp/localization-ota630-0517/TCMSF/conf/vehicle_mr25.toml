@@ -1,0 +1,9 @@
+## 车型特定参数，主要是传感器的杆臂值
+
+[basic_info]
+vehicle_info = "MR25"
+
+# 为了与文档内的杆臂值定义一致，这里杆臂值的描述，自车采用前左上定义，单位为毫米
+[lever_FLU] # x-y-z -> 前-左-上 定义，单位 毫米 mm
+lever_flu_vehicle_2_gnss_antenna = [-856.28, 241.86, 1795.08] # 自车到卫星天线的杆臂
+lever_flu_vehicle_2_imu = [-737.33, -82.38, 476.27]           # 自车到IMU的杆臂
